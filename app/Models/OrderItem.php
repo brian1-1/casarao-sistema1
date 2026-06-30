@@ -102,6 +102,9 @@ class OrderItem extends Model
         if (! empty($c['ingredientes']) && is_array($c['ingredientes'])) {
             $parts[] = '+ ' . implode(', ', $c['ingredientes']);
         }
+        if (! empty($c['ponto_label'])) {
+            $parts[] = 'Ponto: ' . $c['ponto_label'];
+        }
 
         return implode(' · ', $parts);
     }

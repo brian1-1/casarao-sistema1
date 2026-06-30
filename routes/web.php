@@ -36,6 +36,9 @@ Route::middleware('auth')->group(function () {
         // "Monte sua Massa": adiciona ao carrinho um item customizado (massa + molho + ingredientes)
         Route::post('/mesa/{table}/item/customizado', [ClienteController::class, 'addCustomItem'])->name('item.add_custom');
 
+        // Pratos de carne: adiciona ao carrinho exigindo a escolha do ponto da carne
+        Route::post('/mesa/{table}/item/ponto-carne', [ClienteController::class, 'addMeatItem'])->name('item.add_meat');
+
         Route::post('/mesa/{table}/item/qty', [ClienteController::class, 'updateQty'])->name('item.qty');
         Route::post('/mesa/{table}/item/remove', [ClienteController::class, 'removeItem'])->name('item.remove');
         Route::post('/mesa/{table}/confirmar', [ClienteController::class, 'confirm'])->name('confirm');

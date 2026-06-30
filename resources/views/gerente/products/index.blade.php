@@ -29,6 +29,9 @@
                                 @if($product->is_customizable)
                                     <span class="badge badge-ocupada" title="Monte sua Massa"><i class="ti ti-adjustments"></i></span>
                                 @endif
+                                @if($product->requires_meat_point)
+                                    <span class="badge badge-ocupada" title="Pede ponto da carne"><i class="ti ti-flame"></i></span>
+                                @endif
                             </div>
                             <div style="font-size:11px;color:var(--muted);">{{ Str::limit($product->description, 50) }}</div>
                         </div>

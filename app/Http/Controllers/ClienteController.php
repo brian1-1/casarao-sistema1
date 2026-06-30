@@ -12,6 +12,7 @@ use App\Models\Table;
 use App\Models\TableTransfer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 /**
  * Mesa do Cliente — cardápio interativo, comanda e pagamento.
@@ -75,6 +76,11 @@ class ClienteController extends Controller
         // Produtos "Monte sua Massa" precisam passar pelo fluxo de customização
         if ($product->is_customizable) {
             return back()->withErrors(['cart' => 'Este prato precisa ser personalizado. Use o botão "Montar".']);
+        }
+
+        // Pratos de carne exigem a escolha do ponto antes de ir para a comanda
+        if ($product->requires_meat_point) {
+            return back()->withErrors(['cart' => 'Escolha o ponto da carne antes de adicionar este prato.']);
         }
 
         $cart = $this->getCart($table->id);
@@ -180,6 +186,55 @@ class ClienteController extends Controller
         $this->saveCart($table->id, $cart);
 
         return back()->with('success', 'Sua massa personalizada foi adicionada à comanda.');
+    }
+
+    /**
+     * Adiciona ao carrinho um prato de carne com o ponto escolhido pelo cliente
+     * (mal passado, ao ponto ou bem passado).
+     */
+    public function addMeatItem(Request $request, Table $table)
+    {
+        $data = $request->validate([
+            'product_id' => ['required', 'exists:products,id'],
+            'ponto'      => ['required', 'string', Rule::in(array_keys(Product::MEAT_POINTS))],
+            'notes'      => ['nullable', 'string', 'max:255'],
+        ], [
+            'ponto.required' => 'Escolha o ponto da carne.',
+            'ponto.in'       => 'Ponto da carne inválido.',
+        ]);
+
+        $product = Product::findOrFail($data['product_id']);
+
+        if (! $product->requires_meat_point) {
+            return back()->withErrors(['cart' => 'Este prato não exige escolha de ponto da carne.']);
+        }
+
+        $customization = [
+            'ponto'       => $data['ponto'],
+            'ponto_label' => Product::MEAT_POINTS[$data['ponto']],
+        ];
+
+        $cart = $this->getCart($table->id);
+
+        // Junta com um item igual já existente no carrinho (mesmo produto, ponto e observação)
+        $key = (string) $product->id . '|ponto-' . $data['ponto'] . '|' . ($data['notes'] ?? '');
+
+        if (isset($cart[$key])) {
+            $cart[$key]['quantity']++;
+        } else {
+            $cart[$key] = [
+                'product_id'    => $product->id,
+                'name'          => $product->name,
+                'price'         => (float) $product->price,
+                'quantity'      => 1,
+                'notes'         => $data['notes'] ?? '',
+                'customization' => $customization,
+            ];
+        }
+
+        $this->saveCart($table->id, $cart);
+
+        return back()->with('success', $product->name . ' (' . Product::MEAT_POINTS[$data['ponto']] . ') adicionado à comanda.');
     }
 
     /**
@@ -375,7 +430,7 @@ class ClienteController extends Controller
     public function pay(Request $request, Table $table)
     {
         $data = $request->validate([
-            'method' => ['required', 'in:pix,dinheiro,cartao'],
+            'method' => ['required', 'in:pix,dinheiro,cartao,qrcode'],
         ], [
             'method.required' => 'Selecione a forma de pagamento.',
             'method.in'       => 'Forma de pagamento inválida.',
@@ -398,9 +453,11 @@ class ClienteController extends Controller
         // Marca os pedidos como entregues
         $table->activeOrders()->update(['status' => 'entregue']);
 
-        // Mesa fechada e depois liberada
+        // Mesa fechada e depois liberada e "limpa": sem comanda aberta (opened_at nulo)
+        // e sem carrinho em sessão, para que o próximo cliente não veja o pedido anterior.
         $table->update(['status' => 'fechada']);
         $table->update(['status' => 'livre', 'opened_at' => null]);
+        $this->saveCart($table->id, []);
 
         return redirect()
             ->route('cliente.mesas')

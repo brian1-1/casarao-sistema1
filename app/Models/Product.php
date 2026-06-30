@@ -9,14 +9,26 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Product extends Model
 {
+    /**
+     * Pontos de carne disponíveis para pratos marcados com requires_meat_point.
+     * Chave usada no JSON de customização => rótulo exibido ao cliente.
+     */
+    const MEAT_POINTS = [
+        'mal_passado' => 'Mal passado',
+        'ao_ponto'    => 'Ao ponto',
+        'bem_passado' => 'Bem passado',
+    ];
+
     protected $fillable = [
-        'category_id', 'name', 'description', 'serves', 'price', 'image', 'available', 'is_customizable',
+        'category_id', 'name', 'description', 'serves', 'price', 'image', 'available',
+        'is_customizable', 'requires_meat_point',
     ];
 
     protected $casts = [
-        'price'           => 'decimal:2',
-        'available'       => 'boolean',
-        'is_customizable' => 'boolean',
+        'price'                => 'decimal:2',
+        'available'            => 'boolean',
+        'is_customizable'      => 'boolean',
+        'requires_meat_point'  => 'boolean',
     ];
 
     /**

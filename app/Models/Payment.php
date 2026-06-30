@@ -30,6 +30,7 @@ class Payment extends Model
             'pix'      => 'Pix',
             'dinheiro' => 'Dinheiro',
             'cartao'   => 'Cartão',
+            'qrcode'   => 'QR Code',
             default    => $this->method,
         };
     }

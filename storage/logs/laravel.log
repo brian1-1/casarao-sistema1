@@ -1949,3 +1949,46 @@
 #38 /home/brian/Documentos/restaurante/artisan(13): Illuminate\\Foundation\\Application->handleCommand()
 #39 {main}
 "} 
+[2026-06-30 16:27:35] local.ERROR: Command "migrade" is not defined.
+
+Did you mean one of these?
+    migrate
+    migrate:fresh
+    migrate:install
+    migrate:refresh
+    migrate:reset
+    migrate:rollback
+    migrate:status {"exception":"[object] (Symfony\\Component\\Console\\Exception\\CommandNotFoundException(code: 0): Command \"migrade\" is not defined.
+
+Did you mean one of these?
+    migrate
+    migrate:fresh
+    migrate:install
+    migrate:refresh
+    migrate:reset
+    migrate:rollback
+    migrate:status at /home/brian/Documentos/restaurante/vendor/symfony/console/Application.php:759)
+[stacktrace]
+#0 /home/brian/Documentos/restaurante/vendor/symfony/console/Application.php(298): Symfony\\Component\\Console\\Application->find()
+#1 /home/brian/Documentos/restaurante/vendor/symfony/console/Application.php(195): Symfony\\Component\\Console\\Application->doRun()
+#2 /home/brian/Documentos/restaurante/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony\\Component\\Console\\Application->run()
+#3 /home/brian/Documentos/restaurante/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate\\Foundation\\Console\\Kernel->handle()
+#4 /home/brian/Documentos/restaurante/artisan(13): Illuminate\\Foundation\\Application->handleCommand()
+#5 {main}
+"} 
+[2026-06-30 16:27:51] local.ERROR: There are no commands defined in the "migrade" namespace.
+
+Did you mean this?
+    migrate {"exception":"[object] (Symfony\\Component\\Console\\Exception\\NamespaceNotFoundException(code: 0): There are no commands defined in the \"migrade\" namespace.
+
+Did you mean this?
+    migrate at /home/brian/Documentos/restaurante/vendor/symfony/console/Application.php:694)
+[stacktrace]
+#0 /home/brian/Documentos/restaurante/vendor/symfony/console/Application.php(743): Symfony\\Component\\Console\\Application->findNamespace()
+#1 /home/brian/Documentos/restaurante/vendor/symfony/console/Application.php(298): Symfony\\Component\\Console\\Application->find()
+#2 /home/brian/Documentos/restaurante/vendor/symfony/console/Application.php(195): Symfony\\Component\\Console\\Application->doRun()
+#3 /home/brian/Documentos/restaurante/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony\\Component\\Console\\Application->run()
+#4 /home/brian/Documentos/restaurante/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate\\Foundation\\Console\\Kernel->handle()
+#5 /home/brian/Documentos/restaurante/artisan(13): Illuminate\\Foundation\\Application->handleCommand()
+#6 {main}
+"} 

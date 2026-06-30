@@ -78,21 +78,23 @@ class ProductController extends Controller
     private function validateData(Request $request): array
     {
         return $request->validate([
-            'category_id'     => ['required', 'exists:categories,id'],
-            'name'            => ['required', 'string', 'max:255'],
-            'description'     => ['nullable', 'string'],
-            'serves'          => ['nullable', 'string', 'max:50'],
-            'price'           => ['required', 'numeric', 'min:0'],
-            'available'       => ['nullable', 'boolean'],
-            'is_customizable' => ['nullable', 'boolean'],
+            'category_id'          => ['required', 'exists:categories,id'],
+            'name'                 => ['required', 'string', 'max:255'],
+            'description'          => ['nullable', 'string'],
+            'serves'               => ['nullable', 'string', 'max:50'],
+            'price'                => ['required', 'numeric', 'min:0'],
+            'available'            => ['nullable', 'boolean'],
+            'is_customizable'      => ['nullable', 'boolean'],
+            'requires_meat_point'  => ['nullable', 'boolean'],
         ], [
             'category_id.required' => 'Selecione a categoria.',
             'name.required'        => 'Informe o nome do produto.',
             'price.required'       => 'Informe o preço.',
             'price.numeric'        => 'O preço deve ser um número.',
         ]) + [
-            'available'       => $request->boolean('available'),
-            'is_customizable' => $request->boolean('is_customizable'),
+            'available'           => $request->boolean('available'),
+            'is_customizable'     => $request->boolean('is_customizable'),
+            'requires_meat_point' => $request->boolean('requires_meat_point'),
         ];
     }
 

@@ -26,12 +26,21 @@ class Table extends Model
 
     /**
      * Pedidos ativos (da comanda atual, ainda não pagos/entregues completamente).
-     * Considera os pedidos criados após a abertura da comanda.
+     * Considera apenas os pedidos criados após a abertura da comanda atual.
+     *
+     * IMPORTANTE: quando a mesa não tem comanda aberta (opened_at nulo — ex: logo
+     * após o pagamento, mesa "limpa" para o próximo cliente), NÃO deve retornar
+     * nenhum pedido. Sem essa condição, a query voltaria TODOS os pedidos já
+     * feitos na mesa, inclusive os de clientes anteriores.
      */
     public function activeOrders()
     {
         return $this->hasMany(Order::class)
-            ->when($this->opened_at, fn ($q) => $q->where('created_at', '>=', $this->opened_at));
+            ->when(
+                $this->opened_at,
+                fn ($q) => $q->where('created_at', '>=', $this->opened_at),
+                fn ($q) => $q->whereRaw('1 = 0')
+            );
     }
 
     /**

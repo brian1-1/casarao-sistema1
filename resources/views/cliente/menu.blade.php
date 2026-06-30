@@ -53,11 +53,15 @@
     .qty-val { min-width: 22px; text-align: center; font-weight: 700; font-size: 13px; }
     .comanda-empty { text-align: center; color: var(--panel-muted); font-size: 13px; padding: 20px 0; }
     .comanda-total { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.15); font-size: 16px; font-weight: 800; }
-    .pay-methods { display: flex; gap: 8px; margin: 8px 0 12px; }
-    .pay-opt { flex: 1; }
+    .pay-methods { display: flex; gap: 8px; margin: 8px 0 12px; flex-wrap: wrap; }
+    .pay-opt { flex: 1 1 calc(50% - 4px); min-width: 80px; }
     .pay-opt input { display: none; }
     .pay-opt label { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; border-radius: 9px; background: rgba(255,255,255,0.08); font-size: 11px; font-weight: 700; cursor: pointer; border: 2px solid transparent; }
     .pay-opt input:checked + label { border-color: var(--gold); background: rgba(212,160,23,0.18); }
+    .qrcode-preview { display: none; flex-direction: column; align-items: center; gap: 8px; background: rgba(255,255,255,0.06); border-radius: 9px; padding: 14px; margin-bottom: 12px; }
+    .qrcode-preview.show { display: flex; }
+    .qrcode-preview canvas { border-radius: 6px; background: #fff; }
+    .qrcode-caption { font-size: 11px; color: var(--panel-muted); text-align: center; }
     .sent-tag { font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 700; }
     .sent-tag.st-enviado { background: var(--amber); color: #1c1c1a; }
     .sent-tag.st-em_preparo { background: var(--blue); color: #fff; }
@@ -130,6 +134,8 @@
                                             <button type="button" class="btn-montar" onclick="openPastaModal({{ $product->id }}, '{{ $product->name }}', {{ $product->price }})">
                                                 <i class="ti ti-adjustments"></i> Montar
                                             </button>
+                                        @elseif($product->requires_meat_point)
+                                            <button type="button" class="btn-add" aria-label="Adicionar {{ $product->name }}" onclick="openMeatModal({{ $product->id }}, '{{ $product->name }}')">+</button>
                                         @else
                                             <form method="POST" action="{{ route('cliente.item.add', $table) }}">
                                                 @csrf
@@ -238,9 +244,13 @@
                             <div class="citem-name">{{ $item['name'] }}</div>
                             @if(!empty($item['customization']))
                                 <div class="citem-custom">
-                                    {{ $item['customization']['massa'] }} · {{ $item['customization']['molho'] }}
-                                    @if(!empty($item['customization']['ingredientes']))
-                                        · + {{ implode(', ', $item['customization']['ingredientes']) }}
+                                    @if(!empty($item['customization']['massa']))
+                                        {{ $item['customization']['massa'] }} · {{ $item['customization']['molho'] }}
+                                        @if(!empty($item['customization']['ingredientes']))
+                                            · + {{ implode(', ', $item['customization']['ingredientes']) }}
+                                        @endif
+                                    @elseif(!empty($item['customization']['ponto_label']))
+                                        Ponto: {{ $item['customization']['ponto_label'] }}
                                     @endif
                                 </div>
                             @endif
@@ -277,18 +287,28 @@
                     @csrf
                     <div class="pay-methods">
                         <div class="pay-opt">
-                            <input type="radio" name="method" id="m-pix" value="pix" checked>
-                            <label for="m-pix"><i class="ti ti-qrcode"></i> Pix</label>
+                            <input type="radio" name="method" id="m-pix" value="pix" checked onchange="onPayMethodChange()">
+                            <label for="m-pix"><i class="ti ti-bolt"></i> Pix</label>
                         </div>
                         <div class="pay-opt">
-                            <input type="radio" name="method" id="m-din" value="dinheiro">
+                            <input type="radio" name="method" id="m-din" value="dinheiro" onchange="onPayMethodChange()">
                             <label for="m-din"><i class="ti ti-cash"></i> Dinheiro</label>
                         </div>
                         <div class="pay-opt">
-                            <input type="radio" name="method" id="m-car" value="cartao">
+                            <input type="radio" name="method" id="m-car" value="cartao" onchange="onPayMethodChange()">
                             <label for="m-car"><i class="ti ti-credit-card"></i> Cartão</label>
                         </div>
+                        <div class="pay-opt">
+                            <input type="radio" name="method" id="m-qr" value="qrcode" onchange="onPayMethodChange()">
+                            <label for="m-qr"><i class="ti ti-scan"></i> QR Code</label>
+                        </div>
                     </div>
+
+                    <div id="qrcode-preview" class="qrcode-preview">
+                        <canvas id="qrcode-canvas" width="160" height="160"></canvas>
+                        <div class="qrcode-caption">Aponte a câmera e escaneie para pagar</div>
+                    </div>
+
                     <button type="submit" class="btn btn-green" style="width:100%;">
                         <i class="ti ti-check"></i> Encerrar conta · R$ {{ number_format($sentTotal, 2, ',', '.') }}
                     </button>
@@ -363,6 +383,37 @@
     </div>
 </div>
 
+{{-- ----- Modal "Ponto da Carne" ----- --}}
+<div class="modal-overlay" id="meat-modal">
+    <div class="modal-box" style="max-width:380px;">
+        <div class="modal-head">
+            <div class="modal-title" id="meat-modal-title">Ponto da carne</div>
+            <button type="button" class="modal-close" onclick="closeMeatModal()">&times;</button>
+        </div>
+        <p class="modal-sub">Como você prefere a carne?</p>
+
+        <form method="POST" action="{{ route('cliente.item.add_meat', $table) }}" id="meat-form">
+            @csrf
+            <input type="hidden" name="product_id" id="meat-product-id">
+
+            <div class="opt-radio-list">
+                @foreach(\App\Models\Product::MEAT_POINTS as $value => $label)
+                    <label class="opt-radio">
+                        <input type="radio" name="ponto" value="{{ $value }}" required @checked($loop->first)>
+                        {{ $label }}
+                    </label>
+                @endforeach
+            </div>
+
+            <div class="modal-foot">
+                <button type="submit" class="btn btn-gold" style="width:100%;">
+                    <i class="ti ti-check"></i> Adicionar à comanda
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -387,6 +438,17 @@
 
     function closePastaModal() {
         document.getElementById('pasta-modal').classList.remove('open');
+    }
+
+    // ---- Modal "Ponto da Carne" ----
+    function openMeatModal(productId, productName) {
+        document.getElementById('meat-modal-title').textContent = productName;
+        document.getElementById('meat-product-id').value = productId;
+        document.getElementById('meat-modal').classList.add('open');
+    }
+
+    function closeMeatModal() {
+        document.getElementById('meat-modal').classList.remove('open');
     }
 
     // Validação de limite de ingredientes NO FRONTEND (a revalidação real ocorre no backend)
@@ -418,6 +480,55 @@
         const form = btn.closest('form');
         form.querySelector('input[name="reason"]').value = reason.trim();
         form.submit();
+    }
+
+    // ---- Pagamento: mostra/esconde e gera a imagem genérica de QR Code ----
+    function onPayMethodChange() {
+        const selected = document.querySelector('input[name="method"]:checked');
+        const preview = document.getElementById('qrcode-preview');
+        if (selected && selected.value === 'qrcode') {
+            preview.classList.add('show');
+            drawRandomQrCode();
+        } else {
+            preview.classList.remove('show');
+        }
+    }
+
+    // Desenha um padrão aleatório no estilo de QR Code (genérico, apenas ilustrativo).
+    function drawRandomQrCode() {
+        const canvas = document.getElementById('qrcode-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const grid = 21; // tamanho típico de um QR Code "versão 1"
+        const cell = canvas.width / grid;
+
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#1c1c1a';
+
+        // Módulos aleatórios (genéricos, sem dado real codificado)
+        for (let y = 0; y < grid; y++) {
+            for (let x = 0; x < grid; x++) {
+                if (Math.random() < 0.45) {
+                    ctx.fillRect(x * cell, y * cell, cell, cell);
+                }
+            }
+        }
+
+        // "Olhos" característicos de QR Code, nos 3 cantos, para parecer realista
+        const drawEye = (ox, oy) => {
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(ox * cell, oy * cell, cell * 7, cell * 7);
+            ctx.fillStyle = '#1c1c1a';
+            ctx.fillRect(ox * cell, oy * cell, cell * 7, cell * 7);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect((ox + 1) * cell, (oy + 1) * cell, cell * 5, cell * 5);
+            ctx.fillStyle = '#1c1c1a';
+            ctx.fillRect((ox + 2) * cell, (oy + 2) * cell, cell * 3, cell * 3);
+        };
+        drawEye(0, 0);
+        drawEye(grid - 7, 0);
+        drawEye(0, grid - 7);
     }
 </script>
 @endpush

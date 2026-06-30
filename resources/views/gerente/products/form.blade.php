@@ -75,6 +75,16 @@
             </div>
         </div>
 
+        <div class="form-group">
+            <label class="form-check">
+                <input type="checkbox" name="requires_meat_point" value="1" @checked(old('requires_meat_point', $product->requires_meat_point))>
+                <span>É um prato de carne (cliente escolhe o ponto: mal passado, ao ponto ou bem passado)</span>
+            </label>
+            <div style="font-size:11px;color:var(--muted);margin-top:5px;">
+                Marque para pratos de carne. O cliente verá um seletor de ponto antes de adicionar o item à comanda.
+            </div>
+        </div>
+
         <div style="display:flex;gap:10px;">
             <button type="submit" class="btn btn-primary"><i class="ti ti-device-floppy"></i> Salvar</button>
             <a href="{{ route('gerente.products.index') }}" class="btn btn-ghost">Cancelar</a>
