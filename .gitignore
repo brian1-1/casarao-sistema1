@@ -1,0 +1,17 @@
+404: Not Found/vendor/
+/node_modules/
+/.env
+/public/storage
+/storage/*.key
+.phpunit.result.cache
+/vendor/
+
+/node_modules/
+
+/.env
+
+/public/storage
+
+/storage/*.key
+
+.phpunit.result.cache
